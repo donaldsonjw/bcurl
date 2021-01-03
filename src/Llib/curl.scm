@@ -11,6 +11,8 @@
       (type curl-multi (struct) "CURLM")
       (type curl-mime (struct) "curl_mime")
       (type curl-mimepart (struct) "curl_mimepart")
+      (type curl-waitfd (struct) "struct curl_waitfd")
+      (type curl-waitfds (pointer curl-waitfd) "struct curl_waitfd*")
       (type curl-msg-type
          (enum
             (curlmsg-done "CURLMSG_DONE"))
@@ -202,6 +204,8 @@
       (curl-multi-remove-handle::curl-multi-code (multi::curl-multi* handle::curl*) "curl_multi_remove_handle")
       (curl-multi-perform::curl-multi-code (multi::curl-multi* running::int*) "curl_multi_perform")
       (curl-multi-info-read::curl-msg* (multi::curl-multi* remaining_msgs::int*) "curl_multi_info_read")
+      (curl-multi-poll::curl-multi-code (multi::curl-multi* extra-fds::curl-waitfds extra-nfds::uint timeout-ms::int numfds::int*)
+         "curl_multi_poll")
       (curl-multi-wakeup::curl-multi-code (multi::curl-multi*) "curl_multi_wakeup")
       (macro curl-easy-setopt::curl-code
          (handle::curl* option::curl-opt parameter::void*)
@@ -282,7 +286,9 @@
       (curl-mime-subparts! part subparts)
       (curl-mime-headers! part headers::pair-nil)
       (curl-mime-filedata! part filename::bstring)
-      (curl-multi-remove-handle! multi handle)))
+      (curl-multi-remove-handle! multi handle)
+      (curl-multi-poll! multi timout::int)
+      (curl-multi-wakeup! multi)))
 
 
 (define (curl-socktype->symbol socktype::curl-socktype)
@@ -826,6 +832,7 @@
              ((STRING)
               curl-get-string-info)
              ((LONG OFF_T)
+              ;; note we are assuming 64-bit longs here
               curl-get-long-info)
              ((DOUBLE)
               curl-get-double-info)
@@ -989,9 +996,6 @@
       (curl-option-set! handle 'headerdata #f)
       handle))
 
-(define (make-curl-multi)
-   (curl-multi-init))
-
 (define (make-curl-mime handle)
    (if (curl*? handle)
        (curl-mime-init handle)
@@ -1081,6 +1085,9 @@
        (error "curl-mime-headers!" "invalid argument -- requires curl-mimepart* but received"
           part)))
 
+(define (make-curl-multi)
+   (curl-multi-init))
+
 (define (curl-multi-add-handle! multi handle)
    (if (and (curl-multi*? multi)
             (curl*? handle))
@@ -1101,6 +1108,17 @@
           #unspecified)
        (error "curl-multi-remove-handle!" "invalid arguments -- require curl-multi* and curl* but received"
                 (list multi handle))))
+
+(define (curl-multi-poll! multi timout::int)
+   (if (curl-multi*? multi)
+       (let* ((numfds::int 0)
+              (res (curl-multi-poll multi (make-null-curl-waitfds) 0 timout
+                      (addr-of-int numfds))))
+          (if (not (=curl-multi-code? res (curl-multi-code-curlm-ok)))
+              (error "curl-multi-poll!" "failed when polling" res)
+              numfds))
+       (error "curl-multi-poll!" "invalid argument -- require curl-multi* but received"
+          multi)))
 
 (define (curl-multi-info-read! multi)
    (if (curl-multi*? multi)
@@ -1232,7 +1250,7 @@
                 ((=curl-multi-code? ret (curl-multi-code-curlm-call-multi-perform))
                  (curl-multi-perform! multi))
                 (else
-                 (error "curl-mulit-perform!" "failed execution" ret)))))
+                 (error "curl-multi-perform!" "failed execution" ret)))))
    (error "curl-multi-perform!" "invalid curl-multi handle" multi))
 
 (define *curl-init* #f)

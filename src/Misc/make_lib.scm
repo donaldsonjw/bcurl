@@ -16,5 +16,7 @@
 ;;;;     <http://www.gnu.org/licenses/>.
  
 (module bcurl_make_lib
-   (import bcurl/easy)
+   (import bcurl/easy
+           bcurl/multi
+           bcurl/mime)
    (eval (export-all)))

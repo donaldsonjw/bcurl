@@ -2,30 +2,28 @@
    (import bcurl/curl
            bcurl/easy)
    (export
-      (final-class %mime
-         handle)
-      (make-mime::%mime easy::%easy)
-      (mime-addpart-w/string! mime::%mime name::bstring data::bstring
+      (make-mime easy)
+      (mime-addpart-w/string! mime name::bstring data::bstring
          #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-      (mime-addpart-w/filedata! mime::%mime name::bstring filename::bstring
+      (mime-addpart-w/filedata! mime name::bstring filename::bstring
          #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-      (mime-addpart-w/input-port! mime::%mime name::bstring port::input-port
+      (mime-addpart-w/input-port! mime name::bstring port::input-port
          #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-      (mime-addsubparts! mime::%mime name::bstring subparts::%mime
+      (mime-addsubparts! mime name::bstring subparts
          #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-      (easy-mime-data-set! easy::%easy mime::%mime)))
+      (easy-mime-data-set! easy mime)))
 
-(define (make-mime::%mime easy::%easy)
-   (let ((res (instantiate::%mime (handle (make-curl-mime (-> easy handle))))))
-      (curl-cleanup-handler-add! (-> easy handle)
+(define (make-mime easy)
+   (let ((res (make-curl-mime easy)))
+      (curl-cleanup-handler-add! easy
          (lambda () (when res
                   (curl-mime-free! res)
                   (set! res #f))))
       res))
 
-(define (mime-addpart-w/string! mime::%mime name::bstring data::bstring
+(define (mime-addpart-w/string! mime name::bstring data::bstring
            #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-   (let ((part (curl-mime-addpart! (-> mime handle))))
+   (let ((part (curl-mime-addpart! mime)))
       (curl-mime-name! part name)
       (curl-mime-data! part data)
       (when (not (string=? "" type))
@@ -36,9 +34,9 @@
          (curl-mime-filename! part filename))
       #unspecified))
 
-(define (mime-addpart-w/filedata! mime::%mime name::bstring filename::bstring
+(define (mime-addpart-w/filedata! mime name::bstring filename::bstring
            #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-   (let ((part (curl-mime-addpart! (-> mime handle))) )
+   (let ((part (curl-mime-addpart! mime)) )
       (curl-mime-name! part name)
       (curl-mime-filedata! part filename)
       (when (not (string=? "" type))
@@ -49,9 +47,9 @@
          (curl-mime-filename! part filename))
       #unspecified))
 
-(define (mime-addpart-w/input-port! mime::%mime name::bstring port::input-port
+(define (mime-addpart-w/input-port! mime name::bstring port::input-port
            #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-   (let ((part (curl-mime-addpart! (-> mime handle))))
+   (let ((part (curl-mime-addpart! mime)))
       (curl-mime-name! part name)
       (curl-mime-data-port! part port)
       (when (not (string=? "" type))
@@ -62,9 +60,9 @@
          (curl-mime-filename! part filename))
       #unspecified))
 
-(define (mime-addsubparts! mime::%mime name::bstring subparts::%mime
+(define (mime-addsubparts! mime name::bstring subparts
            #!optional (type::bstring "") (headers::pair-nil '()) (filename::bstring ""))
-   (let ((part (curl-mime-addpart! (-> mime handle))))
+   (let ((part (curl-mime-addpart! mime)))
       (curl-mime-name! part name)
       (curl-mime-subparts! part subparts)
       (when (not (string=? "" type))
@@ -75,7 +73,7 @@
          (curl-mime-filename! part filename))
       #unspecified))
 
-(define (easy-mime-data-set! easy::%easy mime::%mime)
-   (curl-option-set! (-> easy handle) 'mimepost (-> mime handle)))
+(define (easy-mime-data-set! easy mime)
+   (curl-option-set! easy 'mimepost mime))
 
 
