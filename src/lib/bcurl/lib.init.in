@@ -1,5 +1,4 @@
-
-;;;; Copyright(c) 2019 Joseph Donaldson(donaldsonjw@yahoo.com) 
+;;;; Copyright(c) 2019, 2025 Joseph Donaldson(donaldsonjw@yahoo.com) 
 ;;;; This file is part of bcurl.
 ;;;;
 ;;;;     bcurl is free software: you can redistribute it and/or modify
@@ -16,10 +15,9 @@
 ;;;;     License along with collections.  If not, see
 ;;;;     <http://www.gnu.org/licenses/>.
 
-
 (declare-library! 'bcurl 
-   :version "0.1"
+   :version "@VERSION@"
    :srfi '(bcurl)
    :basename "bcurl"
    :module-eval 'bcurl_make_lib)
-   
+
